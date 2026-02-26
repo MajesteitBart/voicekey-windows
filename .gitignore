@@ -1,0 +1,25 @@
+# PyInstaller build output
+dist/
+build/
+*.spec
+
+# Local config (contains your API key — never commit this)
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp

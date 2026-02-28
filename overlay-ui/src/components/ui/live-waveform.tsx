@@ -17,6 +17,7 @@ export type LiveWaveformProps = HTMLAttributes<HTMLDivElement> & {
   sensitivity?: number;
   updateRate?: number;
   mode?: "scrolling" | "static";
+  idleLineStyle?: "dotted" | "solid" | "none";
 };
 
 function clamp01(value: number): number {
@@ -135,6 +136,7 @@ export function LiveWaveform({
   sensitivity = 1,
   updateRate = 30,
   mode = "static",
+  idleLineStyle = "dotted",
   className,
   ...props
 }: LiveWaveformProps) {
@@ -224,21 +226,24 @@ export function LiveWaveform({
 
       ctx.clearRect(0, 0, width, heightPx);
 
-      const color = barColor ?? "#ffffff";
-      const centerY = heightPx / 2;
-      const values = mode === "scrolling" && historyRef.current.length > 0
-        ? ensureLength(historyRef.current, barCount)
-        : barsRef.current;
+      const shouldDrawBars = active || processing || (mode === "scrolling" && historyRef.current.length > 0);
+      if (shouldDrawBars) {
+        const color = barColor ?? "#ffffff";
+        const centerY = heightPx / 2;
+        const values = mode === "scrolling" && historyRef.current.length > 0
+          ? ensureLength(historyRef.current, barCount)
+          : barsRef.current;
 
-      for (let index = 0; index < barCount; index += 1) {
-        const value = values[index] ?? 0.04;
-        const x = index * step;
-        const barH = Math.max(baseBarHeight, value * heightPx * 0.85);
-        const y = centerY - barH / 2;
+        for (let index = 0; index < barCount; index += 1) {
+          const value = values[index] ?? 0.04;
+          const x = index * step;
+          const barH = Math.max(baseBarHeight, value * heightPx * 0.85);
+          const y = centerY - barH / 2;
 
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.26 + value * 0.74;
-        drawRoundedRect(ctx, x, y, barWidth, barH, barRadius);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.26 + value * 0.74;
+          drawRoundedRect(ctx, x, y, barWidth, barH, barRadius);
+        }
       }
 
       if (fadeEdges && fadeWidth > 0) {
@@ -288,8 +293,13 @@ export function LiveWaveform({
       role="img"
       {...props}
     >
-      {!active && !processing ? (
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-dotted border-white/35" />
+      {!active && !processing && idleLineStyle !== "none" ? (
+        <div
+          className={cn(
+            "absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-white/35",
+            idleLineStyle === "dotted" ? "border-dotted" : "border-solid",
+          )}
+        />
       ) : null}
       <canvas ref={canvasRef} className="block h-full w-full" aria-hidden="true" />
     </div>

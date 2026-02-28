@@ -13,9 +13,10 @@ export function VoiceOverlay({ state }: VoiceOverlayProps) {
   const mode = deriveMode(state, level);
   const palette = modePalette(mode);
   const bubbleText = bubbleLabel(state, mode);
-  const isListening = mode === "listening_audio" || mode === "listening_wait";
+  const isListening = mode === "listening_audio";
   const isProcessing = mode === "processing";
-  const waveformLevel = mode === "listening_wait" ? Math.max(level * 0.35, 0.12) : level;
+  const waveformLevel = level;
+  const idleLineStyle = mode === "listening_wait" ? "solid" : "dotted";
 
   return (
     <div className="pointer-events-none relative select-none" style={{ width: 194, height: 126 }}>
@@ -48,6 +49,7 @@ export function VoiceOverlay({ state }: VoiceOverlayProps) {
             fadeWidth={26}
             updateRate={28}
             barColor={palette.main}
+            idleLineStyle={idleLineStyle}
             className="h-full w-full"
           />
         </div>

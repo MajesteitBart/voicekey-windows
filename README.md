@@ -99,6 +99,31 @@ Output: `dist\VoiceKey\VoiceKey.exe`
 
 Requires PyInstaller (`pip install pyinstaller`). The build script installs it automatically.
 
+### Full Windows build (backend + overlay)
+
+If you want the Python backend and Tauri overlay both buildable on Windows:
+
+1. Install prerequisites on Windows:
+   - Python 3.11+
+   - Node.js + pnpm
+   - Rust toolchain (`rustup`) with MSVC
+   - Visual Studio Build Tools (Desktop development with C++)
+2. Build backend:
+
+```bat
+build.bat
+```
+
+3. Build overlay app:
+
+```bat
+cd overlay-ui
+pnpm install
+pnpm build
+```
+
+Overlay artifacts are produced in `overlay-ui/src-tauri/target/release/bundle/`.
+
 ---
 
 ## Tauri Overlay UI (React + Tailwind/shadcn-style)

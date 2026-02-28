@@ -65,6 +65,14 @@ Send JSON payloads from Python either as full state or patch.
 }
 ```
 
+### State mapping (overlay behavior)
+
+- `visible: false` -> overlay hidden (ready/idle)
+- `listening: "listening"` + low `level` -> idle-listening waveform
+- `listening: "listening"` + high `level` -> active-listening waveform
+- `processing: "processing"` -> processing animation
+- `target: "not_selected"` or `connection: "offline"` -> warning/error tint + tip bubble
+
 ### Patch example
 
 ```json

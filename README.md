@@ -22,21 +22,10 @@ Hold a hotkey → speak → release → your words are typed anywhere on screen.
 pip install -r requirements.txt
 ```
 
-**2. Set your API key (recommended: env var)**
+**2. Set your API key in Settings**
 
-PowerShell (current shell):
-
-```powershell
-$env:VOICEKEY_API_KEY="your_mistral_key"
-```
-
-Or create a `.env` file in the project folder:
-
-```env
-VOICEKEY_API_KEY=your_mistral_key
-```
-
-Also supported (fallback): `MISTRAL_API_KEY`, then `API_KEY`.
+Start the app, then right-click the tray icon and open **Settings**.
+Paste your API key and click **Save**.
 
 **3. Run**
 
@@ -44,7 +33,7 @@ Also supported (fallback): `MISTRAL_API_KEY`, then `API_KEY`.
 python voicekey.py
 ```
 
-The app starts in the system tray (bottom-right). Right-click → **Settings** if you want to store a key in config.
+The app starts in the system tray (bottom-right). Right-click → **Settings** to configure your API key.
 
 **4. Get an API key**
 
@@ -73,11 +62,11 @@ Sign up at [console.mistral.ai](https://console.mistral.ai) — Voxtral is avail
 
 ## Configuration
 
-Settings are stored in `%APPDATA%\VoiceKey\config.json` and managed through the Settings window. Environment variables override the stored key.
+Settings are stored in `%APPDATA%\VoiceKey\config.json` and managed through the Settings window.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `api_key` | *(empty)* | Stored fallback API key (used when env vars are not set) |
+| `api_key` | *(empty)* | API key used for transcription |
 | `endpoint` | `https://api.mistral.ai/v1/audio/transcriptions` | Transcription endpoint |
 | `model` | `voxtral-mini-latest` | Voxtral model |
 | `hotkey` | `right alt` | Push-to-talk key |
@@ -85,7 +74,7 @@ Settings are stored in `%APPDATA%\VoiceKey\config.json` and managed through the 
 | `paste_mode` | `true` | Clipboard paste (faster) vs. keystroke-by-keystroke |
 | `sample_rate` | `16000` | Microphone sample rate (Hz) |
 
-API key resolution order: `VOICEKEY_API_KEY` → `MISTRAL_API_KEY` → `API_KEY` → `config.json` (`api_key`).
+API key source: `config.json` (`api_key`) set from the Settings window.
 
 ---
 
@@ -95,8 +84,9 @@ API key resolution order: `VOICEKEY_API_KEY` → `MISTRAL_API_KEY` → `API_KEY`
 build.bat
 ```
 
-Output: `dist\VoiceKey\VoiceKey.exe`
 
+Output: `dist\VoiceKey\VoiceKey.exe`
+Dit is een avond.
 Requires PyInstaller (`pip install pyinstaller`). The build script installs it automatically.
 
 ### Full Windows build (backend + overlay)

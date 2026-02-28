@@ -12,7 +12,7 @@ const UDP_ADDR: &str = "127.0.0.1:38485";
 const TASKBAR_MARGIN_PX: i32 = 76;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 struct OverlayState {
     connection: String,
     listening: String,
@@ -20,6 +20,7 @@ struct OverlayState {
     target: String,
     level: f64,
     visible: bool,
+    #[serde(default)]
     message: Option<String>,
 }
 
@@ -50,6 +51,16 @@ struct OverlayPatch {
 }
 
 impl OverlayPatch {
+    fn has_updates(&self) -> bool {
+        self.connection.is_some()
+            || self.listening.is_some()
+            || self.processing.is_some()
+            || self.target.is_some()
+            || self.level.is_some()
+            || self.visible.is_some()
+            || self.message.is_some()
+    }
+
     fn apply(self, state: &mut OverlayState) {
         if let Some(value) = self.connection {
             state.connection = value;
@@ -151,11 +162,13 @@ fn start_udp_bridge(app: AppHandle, shared: Arc<SharedOverlayState>) {
                         continue;
                     }
                     if let Ok(patch) = serde_json::from_str::<OverlayPatch>(payload) {
-                        if let Ok(mut state) = lock_state(&shared) {
-                            patch.apply(&mut state);
-                            emit_overlay_state(&app, &state);
+                        if patch.has_updates() {
+                            if let Ok(mut state) = lock_state(&shared) {
+                                patch.apply(&mut state);
+                                emit_overlay_state(&app, &state);
+                            }
+                            continue;
                         }
-                        continue;
                     }
                     log::warn!("ignored UDP payload (invalid JSON shape): {}", payload);
                 }
@@ -181,10 +194,11 @@ fn position_overlay_window(window: &WebviewWindow) -> tauri::Result<()> {
     };
     if let Some(monitor) = monitor {
         let monitor_size = monitor.size();
+        let monitor_pos = monitor.position();
         let window_size = window.outer_size()?;
         let margin = (TASKBAR_MARGIN_PX as f64 * monitor.scale_factor()) as i32;
-        let x = ((monitor_size.width as i32 - window_size.width as i32) / 2).max(0);
-        let y = (monitor_size.height as i32 - window_size.height as i32 - margin).max(0);
+        let x = monitor_pos.x + ((monitor_size.width as i32 - window_size.width as i32) / 2).max(0);
+        let y = monitor_pos.y + (monitor_size.height as i32 - window_size.height as i32 - margin).max(0);
         window.set_position(Position::Physical(PhysicalPosition::new(x, y)))?;
     }
     Ok(())

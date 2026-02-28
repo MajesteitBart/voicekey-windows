@@ -47,12 +47,14 @@ export function VoiceOverlay({ state }: VoiceOverlayProps) {
             sensitivity={1.1}
             fadeEdges
             fadeWidth={26}
-            updateRate={28}
+            updateRate={20}
             barColor={palette.main}
             idleLineStyle={idleLineStyle}
             className="h-full w-full"
           />
+         
         </div>
+         <span>mode: {mode}</span>
       </div>
     </div>
   );

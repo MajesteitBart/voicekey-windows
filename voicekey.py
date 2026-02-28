@@ -77,7 +77,6 @@ except ImportError:
 APP_NAME = "VoiceKey"
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
-ENV_API_KEY_VARS = ("VOICEKEY_API_KEY", "MISTRAL_API_KEY", "API_KEY")
 
 DEFAULT_CONFIG = {
     "api_key": "",
@@ -128,67 +127,37 @@ CONNECTION_CHECK_INTERVAL = 12
 OVERLAY_BRIDGE_ADDR = ("127.0.0.1", 38485)
 NO_AUDIO_MESSAGE_DELAY_SECONDS = 5.0
 AUDIO_ACTIVITY_THRESHOLD = 0.02
+AUDIO_LEVEL_PUSH_INTERVAL_SECONDS = 0.02
+AUDIO_LEVEL_NORMALIZATION = 6800.0
+AUDIO_LEVEL_NOISE_FLOOR = 0.012
+AUDIO_LEVEL_ATTACK = 0.40
+AUDIO_LEVEL_RELEASE = 0.18
+AUDIO_LEVEL_CURVE = 0.85
 
 # ---------------------------------------------------------------------------
 # Config helpers
 # ---------------------------------------------------------------------------
 
 
-def _load_dotenv() -> None:
-    """Load .env key/value pairs into os.environ without overriding existing vars."""
-    candidates = []
-    try:
-        candidates.append(os.path.join(os.getcwd(), ".env"))
-    except Exception:
-        pass
-    script_dir = os.path.dirname(
-        os.path.abspath(sys.executable if getattr(sys, "frozen", False) else __file__)
-    )
-    candidates.append(os.path.join(script_dir, ".env"))
-
-    seen = set()
-    for dotenv_path in candidates:
-        if dotenv_path in seen:
-            continue
-        seen.add(dotenv_path)
-        if not os.path.isfile(dotenv_path):
-            continue
-        try:
-            with open(dotenv_path, "r", encoding="utf-8") as fh:
-                for raw_line in fh:
-                    line = raw_line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if line.startswith("export "):
-                        line = line[len("export "):].strip()
-                    if "=" not in line:
-                        continue
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-                        value = value[1:-1]
-                    if key and key not in os.environ:
-                        os.environ[key] = value
-        except Exception:
-            pass
+def _env_flag(name: str) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
 
 
-def get_env_api_key() -> str:
-    """Return API key from environment variables (highest-priority source)."""
-    for env_var in ENV_API_KEY_VARS:
-        value = os.environ.get(env_var, "").strip()
-        if value:
-            return value
-    return ""
+DEBUG_OVERLAY_STATES = _env_flag("VOICEKEY_DEBUG_OVERLAY")
+DEBUG_OVERLAY_VERBOSE = _env_flag("VOICEKEY_DEBUG_OVERLAY_VERBOSE")
+
+
+def overlay_debug(message: str) -> None:
+    if not DEBUG_OVERLAY_STATES:
+        return
+    stamp = time.strftime("%H:%M:%S")
+    print(f"[{stamp}] {message}", flush=True)
 
 
 def get_effective_api_key(cfg: dict) -> str:
-    """Resolve API key from env first, then stored config."""
-    return get_env_api_key() or cfg.get("api_key", "").strip()
-
-
-_load_dotenv()
+    """Return API key stored in Settings/config."""
+    return cfg.get("api_key", "").strip()
 
 
 def sanitize_hotkey(value) -> str:
@@ -375,8 +344,12 @@ class StatusOverlay:
         try:
             body = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
             self._bridge_socket.sendto(body, OVERLAY_BRIDGE_ADDR)
+            if DEBUG_OVERLAY_STATES:
+                if DEBUG_OVERLAY_VERBOSE or set(payload.keys()) != {"level"}:
+                    overlay_debug(f"overlay-udp {payload}")
         except Exception:
-            pass
+            if DEBUG_OVERLAY_STATES:
+                overlay_debug("overlay-udp send failed")
 
     def _bridge_hide_later(self, delay_ms: int) -> None:
         if self._bridge_hide_timer is not None:
@@ -1193,6 +1166,7 @@ class VoiceKeyApp:
         self._connection_thread: threading.Thread | None = None
         self._connection_state = "checking"
         self._last_level_push = 0.0
+        self._level_smoothed = 0.0
         self._record_started_at = 0.0
         self._heard_audio_in_session = False
         self._no_audio_message_shown = False
@@ -1204,6 +1178,8 @@ class VoiceKeyApp:
     def _set_state(self, state: str) -> None:
         """Update internal state and refresh tray icon + tooltip."""
         self._state = state
+        if DEBUG_OVERLAY_STATES:
+            overlay_debug(f"app-state {state}")
         labels = {
             "idle":       f"{APP_NAME} — Idle",
             "recording":  f"{APP_NAME} — Recording...",
@@ -1360,9 +1336,18 @@ class VoiceKeyApp:
             if self._recording:
                 self._audio_frames.append(chunk)
                 rms = float(np.sqrt(np.mean(chunk.astype(np.float32) ** 2)))
-                level = max(0.0, min(1.0, rms / 9000.0))
+                raw_level = max(0.0, min(1.0, rms / AUDIO_LEVEL_NORMALIZATION))
+                if raw_level < AUDIO_LEVEL_NOISE_FLOOR:
+                    raw_level = 0.0
 
-                if (not self._heard_audio_in_session) and (level > AUDIO_ACTIVITY_THRESHOLD):
+                # Shape and smooth the signal so motion tracks speech naturally without abrupt jumps.
+                target_level = raw_level ** AUDIO_LEVEL_CURVE
+                previous_level = self._level_smoothed
+                blend = AUDIO_LEVEL_ATTACK if target_level > previous_level else AUDIO_LEVEL_RELEASE
+                level = previous_level + (target_level - previous_level) * blend
+                self._level_smoothed = max(0.0, min(1.0, level))
+
+                if (not self._heard_audio_in_session) and (raw_level > AUDIO_ACTIVITY_THRESHOLD):
                     self._heard_audio_in_session = True
                     if self._no_audio_message_shown:
                         self._overlay.update(message="Listening...")
@@ -1376,9 +1361,8 @@ class VoiceKeyApp:
                     self._no_audio_message_shown = True
 
                 now = time.monotonic()
-                if now - self._last_level_push >= 0.05:
-                    # Normalize RMS to [0..1] for overlay wave amplitude.
-                    self._overlay.update(level=level)
+                if now - self._last_level_push >= AUDIO_LEVEL_PUSH_INTERVAL_SECONDS:
+                    self._overlay.update(level=self._level_smoothed)
                     self._last_level_push = now
 
     def _start_recording(self) -> None:
@@ -1386,6 +1370,8 @@ class VoiceKeyApp:
             if self._recording:
                 return
             self._recording = True
+            self._last_level_push = 0.0
+            self._level_smoothed = 0.0
             self._record_started_at = time.monotonic()
             self._heard_audio_in_session = False
             self._no_audio_message_shown = False
@@ -1439,7 +1425,7 @@ class VoiceKeyApp:
 
             if not get_effective_api_key(self.cfg):
                 self._notify_error(
-                    "No API key set. Use VOICEKEY_API_KEY/MISTRAL_API_KEY, or configure Settings."
+                    "No API key set. Open Settings from the tray icon and save your API key."
                 )
                 self._overlay.update(processing="error")
                 self._set_state("idle")
@@ -1544,7 +1530,7 @@ class VoiceKeyApp:
         """Show a reminder to configure the API key."""
         time.sleep(2)
         self._notify_error(
-            "Welcome! Set VOICEKEY_API_KEY/MISTRAL_API_KEY (.env or system env), or configure Settings."
+            "Welcome! Open Settings from the tray icon and save your API key."
         )
 
 

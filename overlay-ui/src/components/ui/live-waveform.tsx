@@ -202,7 +202,8 @@ export function LiveWaveform({
           const next = buildListeningBars(barCount, clamp01(level * sensitivity), phaseRef.current);
           barsRef.current = next.map((value, index) => {
             const previous = barsRef.current[index] ?? 0.04;
-            return previous * 0.58 + value * 0.42;
+            const blend = value > previous ? 0.34 : 0.20;
+            return previous + (value - previous) * blend;
           });
           if (mode === "scrolling") {
             historyRef.current.push(clamp01(level));
@@ -215,7 +216,7 @@ export function LiveWaveform({
           const next = buildProcessingBars(barCount, phaseRef.current);
           barsRef.current = next.map((value, index) => {
             const previous = barsRef.current[index] ?? 0.04;
-            return previous * 0.62 + value * 0.38;
+            return previous + (value - previous) * 0.30;
           });
           historyRef.current = [];
         } else {

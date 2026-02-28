@@ -22,15 +22,31 @@ Hold a hotkey → speak → release → your words are typed anywhere on screen.
 pip install -r requirements.txt
 ```
 
-**2. Run**
+**2. Set your API key (recommended: env var)**
+
+PowerShell (current shell):
+
+```powershell
+$env:VOICEKEY_API_KEY="your_mistral_key"
+```
+
+Or create a `.env` file in the project folder:
+
+```env
+VOICEKEY_API_KEY=your_mistral_key
+```
+
+Also supported (fallback): `MISTRAL_API_KEY`, then `API_KEY`.
+
+**3. Run**
 
 ```bash
 python voicekey.py
 ```
 
-The app starts in the system tray (bottom-right). Right-click → **Settings** to enter your API key.
+The app starts in the system tray (bottom-right). Right-click → **Settings** if you want to store a key in config.
 
-**3. Get an API key**
+**4. Get an API key**
 
 Sign up at [console.mistral.ai](https://console.mistral.ai) — Voxtral is available on all paid plans.
 
@@ -57,17 +73,19 @@ Sign up at [console.mistral.ai](https://console.mistral.ai) — Voxtral is avail
 
 ## Configuration
 
-Settings are stored in `%APPDATA%\VoiceKey\config.json` and managed through the Settings window.
+Settings are stored in `%APPDATA%\VoiceKey\config.json` and managed through the Settings window. Environment variables override the stored key.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `api_key` | *(empty)* | Your Mistral API key |
+| `api_key` | *(empty)* | Stored fallback API key (used when env vars are not set) |
 | `endpoint` | `https://api.mistral.ai/v1/audio/transcriptions` | Transcription endpoint |
 | `model` | `voxtral-mini-latest` | Voxtral model |
 | `hotkey` | `right alt` | Push-to-talk key |
 | `language` | `auto` | Transcription language (`auto`, `en`, `nl`, `de`, `fr`, …) |
 | `paste_mode` | `true` | Clipboard paste (faster) vs. keystroke-by-keystroke |
 | `sample_rate` | `16000` | Microphone sample rate (Hz) |
+
+API key resolution order: `VOICEKEY_API_KEY` → `MISTRAL_API_KEY` → `API_KEY` → `config.json` (`api_key`).
 
 ---
 
@@ -80,6 +98,25 @@ build.bat
 Output: `dist\VoiceKey\VoiceKey.exe`
 
 Requires PyInstaller (`pip install pyinstaller`). The build script installs it automatically.
+
+---
+
+## Tauri Overlay UI (React + Tailwind/shadcn-style)
+
+An experimental desktop overlay UI is available in `overlay-ui/`.
+
+Run it:
+
+```bash
+cd overlay-ui
+pnpm install
+pnpm dev
+```
+
+It listens for overlay state payloads on UDP `127.0.0.1:38485`.
+See `overlay-ui/README.md` for payload format and bridge details.
+
+Set `VOICEKEY_TAURI_OVERLAY_ONLY=1` to disable Tkinter overlay and use the Tauri overlay only.
 
 ---
 

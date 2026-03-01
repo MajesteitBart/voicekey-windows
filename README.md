@@ -71,6 +71,20 @@ Sign up at [console.mistral.ai](https://console.mistral.ai) — Voxtral is avail
 | 🔴 Red | Recording |
 | 🟠 Orange | Transcribing |
 
+## App screenshots (latest update)
+
+### Listening (idle)
+
+![VoiceKey overlay - listening idle](docs/screenshots/listening-idle.jpg)
+
+### Listening (active)
+
+![VoiceKey overlay - listening active](docs/screenshots/listening-active.jpg)
+
+### Processing
+
+![VoiceKey overlay - processing](docs/screenshots/processing.jpg)
+
 ---
 
 ## Configuration

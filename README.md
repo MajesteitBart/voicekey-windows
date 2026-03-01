@@ -73,17 +73,17 @@ Sign up at [console.mistral.ai](https://console.mistral.ai) — Voxtral is avail
 
 ## App screenshots (latest update)
 
-### Listening (idle)
+### Screenshot 1 (Listening - idle)
 
-![VoiceKey overlay - listening idle](docs/screenshots/listening-idle.jpg)
+![VoiceKey screenshot 1](docs/screenshots/screenshot-1.jpg)
 
-### Listening (active)
+### Screenshot 2 (Processing)
 
-![VoiceKey overlay - listening active](docs/screenshots/listening-active.jpg)
+![VoiceKey screenshot 2](docs/screenshots/screenshot-2.jpg)
 
-### Processing
+### Screenshot 3 (Listening - active)
 
-![VoiceKey overlay - processing](docs/screenshots/processing.jpg)
+![VoiceKey screenshot 3](docs/screenshots/screenshot-3.jpg)
 
 ---
 

@@ -16,14 +16,14 @@ Hold a hotkey → speak → release → your words are typed anywhere on screen.
 
 ## End-user install status
 
-VoiceKey is **not yet shipped as a single-file installer** (`.exe`/`.msi`) that users can click once and install.
+VoiceKey is **not yet shipped as a one-click installer** (`.msi`/setup) or a true **single self-contained executable**.
 
 Current packaging is a **portable folder build** created with PyInstaller `--onedir`:
 
-- `dist\\VoiceKey\\VoiceKey.exe`
+- `dist\VoiceKey\VoiceKey.exe`
 - plus required runtime files in the same folder
 
-That means users must keep the full `dist\\VoiceKey` folder together.
+That means users must keep the full `dist\VoiceKey` folder together.
 
 For complete user-facing installation steps, see **[`docs/USER_INSTALLATION.md`](docs/USER_INSTALLATION.md)**.
 
@@ -108,9 +108,9 @@ API key resolution order: `VOICEKEY_API_KEY` → `MISTRAL_API_KEY` → `API_KEY`
 build.bat
 ```
 
-Output: `dist\\VoiceKey\\VoiceKey.exe`.
+Output: `dist\VoiceKey\VoiceKey.exe`.
 
-Important: this is a **folder-based bundle**, not a single self-contained executable. Share the full `dist\\VoiceKey` directory with users.
+Important: this is a **folder-based bundle**, not a single self-contained executable. Share the full `dist\VoiceKey` directory with users.
 
 Requires PyInstaller (`pip install pyinstaller`). The build script installs it automatically.
 

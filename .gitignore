@@ -1,6 +1,10 @@
 # PyInstaller build output
 dist/
+dist_*/
 build/
+build_*/
+**/dist/
+**/build/
 *.spec
 
 # Local config (contains your API key — never commit this)
@@ -23,3 +27,8 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Secrets
+.env
+.env.*
+!.env.example
